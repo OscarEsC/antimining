@@ -385,10 +385,9 @@ if __name__== "__main__":
     sniff(filter=regla, prn=print_packet)
     
     print("[*] Deteniendo IDS")
-    #bitacora(IoClistDetected)
+    print("[*] Escribiendo resultados en la bitacora")
     for x in range(0,len(IoClistDetected),3):
-    	print [IoClistDetected[x],IoClistDetected[x+1]]
-    	bitacora([IoClistDetected[x],IoClistDetected[x+2]])
+    	bitacora([IoClistDetected[x],IoClistDetected[x+1],IoClistDetected[x+2]])
 
     #malwarePids = ['5168','7080','10']
         # Obtenemos la informacion de un proceso en especifico
