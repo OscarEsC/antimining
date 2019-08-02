@@ -10,6 +10,8 @@ import ConfigParser
 import re
 import os
 import datetime
+# para mostrar mensajes al usuario cuando se detecte una amenaza
+import ctypes
 
 from virustotalAPI import *
 # do_scan("cfb7df0446eecab2dbd64e26e652c5c8a3dd57028e549fbf0a1e50216f99f49b",str(proc.values()[1]))
@@ -228,6 +230,7 @@ def bitacora(IoClistDetected):
         Funcion que creara una bitacora, donde almacenara los IoC hayados en la pieza de malware de minado.
     '''
     if len(IoClistDetected) >= 2:
+        messageBox()
         bitacora = open("bitacoraIDS.txt","a")
         try:
             # Damos formato al diccionario que tiene los detalles del ejecutable encontrado.
@@ -246,6 +249,9 @@ def bitacora(IoClistDetected):
         bitacora.close()
     else:
         pass
+def messageBox():
+    MessageBox = ctypes.windll.user32.MessageBoxA
+    MessageBox(None, 'Se detecto una amenaza en tu equipo revisa tu bitacora de IDS', 'WARNING', 48)
 def loadCfg():
     '''
         Funcion que carga los parametros colocados en un archivo de configuracion como variables
@@ -261,31 +267,31 @@ def loadCfg():
 
     return domain,port,malwareWindowsPath,malwarePath,malwareName#,malwarePid       
 if __name__== "__main__":
-    # Obtenemos los parametros desde un archivo de configuracion
+        # Obtenemos los parametros desde un archivo de configuracion
     domain,port,malwareWindowsPath,malwarePath,malwareName = loadCfg()
     malwarePids = ['5168','7080','10']
-    # Obtenemos la informacion de un proceso en especifico
+        # Obtenemos la informacion de un proceso en especifico
     processInfo = pidInfo(malwarePids)
-     # Acerca del proceso verificamos el uso de CPU y la RAM consumida por este.
+        # Acerca del proceso verificamos el uso de CPU y la RAM consumida por este.
     highProcesses = procAlert(processInfo)
-    # Obtenemos los diccionarios relacionados a HKLM y HKCU, en cada uno tenemos las caracteristicas de las llaves.
+        # Obtenemos los diccionarios relacionados a HKLM y HKCU, en cada uno tenemos las caracteristicas de las llaves.
     dic_HKLM = keysHKLM()
     dic_HKCU = keysHKCU()
     try:
-        # Listas que contiene los indices donde se encontraron la cadena identificada donde se almacena el malware dentro de la llave de registro.
+            # Listas que contiene los indices donde se encontraron la cadena identificada donde se almacena el malware dentro de la llave de registro.
         match_HKLM,match_HKCU = find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses)
-        # Proceso que se realizara cuando se identifica una concidencia en las llaves
+            # Proceso que se realizara cuando se identifica una concidencia en las llaves
         keyAlert(match_HKLM,match_HKCU,dic_HKLM,dic_HKCU)
-        # Buscamos archivos bat en el directorio donde normalmete se alohja el malware
+            # Buscamos archivos bat en el directorio donde normalmete se alohja el malware
         findFiles(highProcesses)
     except (TypeError, AttributeError):
         pass
     bitacora(IoClistDetected)
-    # Obtenemos una lista de los proceso ejecutados.
-    # listOfRunningProcess = getListOfProcess()
-    # Listamos los 10 procesos con mayor uso de CPU 
-    # for i in listOfRunningProcess[:10]:
-      #  print i
-    # Buscamos un especifico PID y regresamos una lista con sus detalles.
-    # processInfo = findPID(malwarePid)
+        # Obtenemos una lista de los proceso ejecutados.
+        # listOfRunningProcess = getListOfProcess()
+        # Listamos los 10 procesos con mayor uso de CPU 
+        # for i in listOfRunningProcess[:10]:
+        #  print i
+        # Buscamos un especifico PID y regresamos una lista con sus detalles.
+        # processInfo = findPID(malwarePid)
     
