@@ -1,5 +1,7 @@
 # python -m pip install psutil
 
+print("[*] Iniciando IDS...")
+print ('[*] Cargando bibliotecas...')
 # Para trabajar con el registro en Windows
 from _winreg import *
 # Para trabajar con los procesos de Windows
@@ -118,6 +120,7 @@ def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
         #print match_HKCU
         return match_HKLM,match_HKCU    
 def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
+    global IoClistDetected
     keys = []
     if not match_HKLM:
         #print "Todo Normal en HKLM"
@@ -141,17 +144,19 @@ def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
             keys.append(key)
     IoClistDetected.append(keys)
 def procAlert(processInfo):
+    global IoClistDetected
     highProcesses = []
     for proc in processInfo:
+        #print 'proceso:'
         #print proc
         cpuAlert= False
         ramAlert = False
         # Si el proceso cosume un % mayor a 70% de CPU
-        if proc.values()[4] >= 70.0:
+        if proc['cpu_percent'] >= 0.0:
             #print "Alerta de aumento de CPU en el proceso: %s con PID %s consumo CPU: %.2f   " %(proc.values()[3],proc.values()[2],proc.values()[4])
             cpuAlert = True
         # Si el proceso cosume mas de 350MB de memoria RAM
-        if proc.values()[0] >= 350.0:
+        if proc['vms'] >= 350.0:
             #print "Alerta de aumento de CPU en el proceso: %s con PID %s consumo RAM: %.2f Mb" %(proc.values()[3],proc.values()[2],proc.values()[0])
             ramAlert = True
         if cpuAlert:
@@ -212,8 +217,10 @@ def findPID(pid):
                         processInfo.append(i)
     return processInfo 
 def findFiles(highProcesses):
+    global IoClistDetected
     for proc in highProcesses:
-        path = proc.values()[1][:(len(proc.values()[3])*-1)]
+        path = proc['exe'][:(len(proc['name'])*-1)]
+        #print path
         filesBatInPath  = []
         malwareFilesBat = []
         exeFiles        = []
@@ -227,7 +234,8 @@ def findFiles(highProcesses):
             match = re.match(r"((.*(\w+\.exe))?.-a?.)[axiom|blake|blakecoin|blake2s|bmw|c11/flax|cryptolight|cryptonight|decred|dmd\-gr|drop|fresh|groestl|heavy|keccak|luffa|lyra2re|lyra2rev2|myr\-gr|neoscrypt|nist5|pluck|pentablake|quark|qubit|scrypt|scrypt\:N|scrypt\-jane:N|shavite3|sha256d|sia|sib|skein|skein2|s3|timetravel|vanilla|x11evo|x11|x13|x14|x15|x17|xevan|yescrypt|zr5]+", f)
             if match:
                 malwareFilesBat.append(file)
-                exeFiles.append(match.group(2).split()[1])
+                #print match.group(2)
+                exeFiles.append(match.group(2))
             IoClistDetected.append(file)
     return malwareFilesBat,exeFiles
 
@@ -240,18 +248,25 @@ def bitacora(IoClistDetected):
         bitacora = open("bitacoraIDS.txt","a")
         try:
             # Damos formato al diccionario que tiene los detalles del ejecutable encontrado.
-            date_process = datetime.datetime.now()
-            details = str(date_process)+":WARNING"
+            date_process = datetime.now()
+            print '1'
+            details = str(date_process)+" ... "+"WARNING"
+            print '2'
             detailProcess = IoClistDetected[0]
-            details += ":"+str(detailProcess.values()[3])+":"+str(detailProcess.values()[1])+":"+str(detailProcess.values()[2])+"PID"+":"+str(detailProcess.values()[4])+"CPU"+":"+str(detailProcess.values()[0])+"MB RAM"
+            print '3'
+            details += " ... "+str(detailProcess.values()[3])+" ... "+str(detailProcess.values()[1])+" ... "+str(detailProcess.values()[2])+"PID"+" ... "+str(detailProcess.values()[4])+"CPU"+" ... "+str(detailProcess.values()[0])+"MB RAM"
+            print '4'
             # Agregamos cada llave de registro que fue encontrada
             for llave in IoClistDetected[1]:
-                details += ":"+llave
+                details += " ... "+llave
             # Agregamos los archivos relacionados a la pieza de malware encontrados
-            details += ":"+str(IoClistDetected[2])
+            print '5'
+            details += " ... "+str(IoClistDetected[2])
+            print '6'
             bitacora.write(details+"\n")  
-        except  (TypeError, AttributeError,IndexError):
-            pass
+            print '7'
+        except  (TypeError, AttributeError,IndexError) as e:
+            print e
         bitacora.close()
     else:
         pass
@@ -286,6 +301,7 @@ def get_pid(dst, dstport):
 
 
 def crea_regla(domains,ports):
+    print '[*] Creando reglas de acuerdo al archivo de configuracion'
     ips =[]
     regla = ''
     domains = domains.replace(' ','')
@@ -296,10 +312,11 @@ def crea_regla(domains,ports):
     del ports
     for i in range(len(dominios)):
         ips.append(gethostbyname(dominios[i]))
-    print ips
+    #print ips
     for ip in ips:
         regla += '(host ' + ip + ' and (' + 'port ' + ' or port '.join(puertos) + ')) or '
-
+    print '[*] Reglas aplicadas en el filtro: '
+    print regla[:-4]
     return regla[:-4]
 
 
@@ -337,31 +354,25 @@ def print_packet(packet):
             """
             Aqui van las funciones de Pedro
             """
-            print "Buscando proceso"
+            #print "Buscando proceso"
             processInfo = pidInfo([malwarePids])
-            print processInfo
+            #print processInfo
             # Acerca del proceso verificamos el uso de CPU y la RAM consumida por este.
             highProcesses = procAlert(processInfo)
-            print highProcesses
+            #print highProcesses
             # Obtenemos los diccionarios relacionados a HKLM y HKCU, en cada uno tenemos las caracteristicas de las llaves.
-            print '1'
             dic_HKLM = keysHKLM()
-            print '2'
             dic_HKCU = keysHKCU()
             try:
-                print '3'
                 # Listas que contiene los indices donde se encontraron la cadena identificada donde se almacena el malware dentro de la llave de registro.
                 match_HKLM,match_HKCU = find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses)
                 # Proceso que se realizara cuando se identifica una concidencia en las llaves
-                print '4'
                 keyAlert(match_HKLM,match_HKCU,dic_HKLM,dic_HKCU)
                 # Buscamos archivos bat en el directorio donde normalmete se alohja el malware
-                print '5'
                 findFiles(highProcesses)
-                print '6'
             except (TypeError, AttributeError):
                 pass
-            bitacora(IoClistDetected)
+            
             
         c += 1
     except Exception as e:
@@ -372,14 +383,18 @@ if __name__== "__main__":
     # Obtenemos los parametros desde un archivo de configuracion
     domain,port,malwareWindowsPath,malwarePath,malwareName = loadCfg()
     regla = crea_regla(domain,port)
-    print("[*] Iniciando sniffing...")
+    print("\n[*] Escaneando la red...")
 
     #sniff(filter="host 132.248.181.220 and (port 443 or port 80)", prn=print_packet)
     sniff(filter=regla, prn=print_packet)
     
-    print("[*] Deteniendo sniffing")
+    print("[*] Deteniendo IDS")
+    #bitacora(IoClistDetected)
+    for x in range(0,len(IoClistDetected),3):
+    	print [IoClistDetected[x],IoClistDetected[x+1]]
+    	bitacora([IoClistDetected[x],IoClistDetected[x+2]])
 
-    malwarePids = ['5168','7080','10']
+    #malwarePids = ['5168','7080','10']
         # Obtenemos la informacion de un proceso en especifico
 
         # Obtenemos una lista de los proceso ejecutados.
@@ -390,3 +405,4 @@ if __name__== "__main__":
         # Buscamos un especifico PID y regresamos una lista con sus detalles.
         # processInfo = findPID(malwarePid)
     
+
