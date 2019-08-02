@@ -1,0 +1,5 @@
+2019-08-02 03:41:19.891000:WARNING:cript.exe:C:\Windows\cript.exe:7080PID:125.0CPU:5MB RAM:\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run cript:C:\Windows\cript.bat
+2019-08-02 03:41:23.950000:WARNING:cript.exe:C:\Windows\cript.exe:7080PID:185.6CPU:5MB RAM:\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run cript:C:\Windows\cript.bat
+2019-08-02 03:41:27.261000:WARNING:cript.exe:C:\Windows\cript.exe:7080PID:187.5CPU:5MB RAM:\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run cript:C:\Windows\cript.bat
+2019-08-02 03:44:00.464000:WARNING:cript.exe:C:\Windows\cript.exe:7080PID:92.8CPU:5MB RAM:\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run cript:C:\Windows\cript.bat
+2019-08-02 03:44:34.123000:WARNING:cript.exe:C:\Windows\cript.exe:7080PID:187.5CPU:5MB RAM:\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run cript:C:\Windows\cript.bat
