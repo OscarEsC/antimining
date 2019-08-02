@@ -328,12 +328,8 @@ def loadCfg():
     config.read("config.ini")
     domain             = config.get("myconfig", "domain")
     port               = config.get("myconfig", "port")
-    malwareWindowsPath = config.get("myconfig", "malwareWindowsPath")
-    malwarePath        = config.get("myconfig", "malwarePath")
-    malwareName        = config.get("myconfig", "malwareName")
-    #malwarePid         = config.get("myconfig", "malwarePid")
 
-    return domain,port,malwareWindowsPath,malwarePath,malwareName#,malwarePid       
+    return domain,port       
 
 def print_packet(packet):
     '''
@@ -381,7 +377,7 @@ def print_packet(packet):
 
 if __name__== "__main__":
     # Obtenemos los parametros desde un archivo de configuracion
-    domain,port,malwareWindowsPath,malwarePath,malwareName = loadCfg()
+    domain,port = loadCfg()
     regla = crea_regla(domain,port)
     print("\n[*] Escaneando la red...")
 
