@@ -26,49 +26,49 @@ IoClistDetected = []
 
 def keysHKLM():
     '''
-        Funcion que lee las llaves contenidas en 
+        Funcion que lee las llaves contenidas en
         HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-    '''   
+    '''
     #print r"*** Leyendo la llave HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run ***"
     aReg = ConnectRegistry(None,HKEY_LOCAL_MACHINE)
     aKey = OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run")
     dic_HKLM = {}
-    for i in range(QueryInfoKey(aKey)[1]):                                         
+    for i in range(QueryInfoKey(aKey)[1]):
         try:
             name,data,_type = EnumValue(aKey,i)
             dic_HKLM[i] = [name,data,_type]
             #print i, name, data, _type
-        except EnvironmentError:                                               
+        except EnvironmentError:
             print "Tienes",i," tareas iniciadas al iniciar"
-            break          
-    CloseKey(aKey) 
+            break
+    CloseKey(aKey)
     CloseKey(aReg)
     #print dic_HKLM.values()
     return dic_HKLM
 def keysHKCU():
     '''
-        Funcion que lee las llaves contenidas en 
+        Funcion que lee las llaves contenidas en
         HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-    '''     
+    '''
     #print r"*** Leyendo la llave HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run ***"
     aReg = ConnectRegistry(None,HKEY_CURRENT_USER)
-    aKey = OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run") 
+    aKey = OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run")
     dic_HKCU = {}
-    for i in range(QueryInfoKey(aKey)[1]):                                         
+    for i in range(QueryInfoKey(aKey)[1]):
         try:
             name,data,_type = EnumValue(aKey,i)
             dic_HKCU[i] = [name,data,_type]
             #print i, name, data, _type
-        except EnvironmentError:                                               
+        except EnvironmentError:
             print "Tienes",i," tareas iniciadas al iniciar"
             break
     CloseKey(aKey)
     CloseKey(aReg)
     #print dic_HKCU.values()
-    return dic_HKCU          
+    return dic_HKCU
 def find_key(dic_HKLM,dic_HKCU):
     '''
-        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario 
+        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
         que contine los registros de las llaves:
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
             HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
@@ -94,7 +94,7 @@ def find_key(dic_HKLM,dic_HKCU):
     return match_HKLM,match_HKCU
 def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
     '''
-        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario 
+        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
         que contine los registros de las llaves:
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
             HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
@@ -118,8 +118,13 @@ def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
             else:
                 continue
         #print match_HKCU
-        return match_HKLM,match_HKCU    
+        return match_HKLM,match_HKCU
 def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
+    '''
+        Funcion que obtiene los indices de los diccionarios de las llaves del Registro de Windows,
+        con estos indices se realiza la funcion de ALERTA y se guarda cada llave como elelentos de
+        una llamada IoClistDetected la cual ya contiene los indocadores de compromiso.
+    '''
     global IoClistDetected
     keys = []
     if not match_HKLM:
@@ -144,6 +149,11 @@ def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
             keys.append(key)
     IoClistDetected.append(keys)
 def procAlert(processInfo):
+    '''
+        Funcion que verifica el porcentaje de CPU utilizado por algun PID, si este es mayor al 70 %
+        toda la informacion y detalles del proceso se anexa a una lista llamada IoClistDetected, la
+        cual contendra los Indicadores de Compromiso.
+    '''
     global IoClistDetected
     highProcesses = []
     for proc in processInfo:
@@ -152,7 +162,7 @@ def procAlert(processInfo):
         cpuAlert= False
         ramAlert = False
         # Si el proceso cosume un % mayor a 70% de CPU
-        if proc['cpu_percent'] >= 0.0:
+        if proc['cpu_percent'] >= 70.0:
             #print "Alerta de aumento de CPU en el proceso: %s con PID %s consumo CPU: %.2f   " %(proc.values()[3],proc.values()[2],proc.values()[4])
             cpuAlert = True
         # Si el proceso cosume mas de 350MB de memoria RAM
@@ -181,7 +191,7 @@ def pidInfo(pids):
             #print detailOfProcess
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return detailOfProcess    
+    return detailOfProcess
 def getListOfProcess():
     '''
         Funcion que obtinen una lista de los procesos ejecutados.
@@ -198,10 +208,10 @@ def getListOfProcess():
            listOfProcObjects.append(pinfo)
        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
            pass
- 
+
     # Ordena los procesos por algun detalle de los procesos.
     listOfProcObjects = sorted(listOfProcObjects, key=lambda procObj: procObj['cpu_percent'], reverse=True)
- 
+
     return listOfProcObjects
 def findPID(pid):
     '''
@@ -215,7 +225,7 @@ def findPID(pid):
                 if value == int(pid):
                     for i in elem.values():
                         processInfo.append(i)
-    return processInfo 
+    return processInfo
 def findFiles(highProcesses):
     global IoClistDetected
     for proc in highProcesses:
@@ -263,7 +273,7 @@ def bitacora(IoClistDetected):
             print '5'
             details += " ... "+str(IoClistDetected[2])
             print '6'
-            bitacora.write(details+"\n")  
+            bitacora.write(details+"\n")
             print '7'
         except  (TypeError, AttributeError,IndexError) as e:
             print e
@@ -272,6 +282,9 @@ def bitacora(IoClistDetected):
         pass
 
 def messageBox():
+    '''
+        Funcion que muestra un mensaje en pantalla una vez que es detectada una amenaza.
+    '''
     MessageBox = ctypes.windll.user32.MessageBoxA
     MessageBox(None, 'Se detecto una amenaza en tu equipo revisa tu bitacora de IDS', 'WARNING', 48)
 
@@ -329,7 +342,7 @@ def loadCfg():
     domain             = config.get("myconfig", "domain")
     port               = config.get("myconfig", "port")
 
-    return domain,port       
+    return domain,port
 
 def print_packet(packet):
     '''
@@ -368,8 +381,8 @@ def print_packet(packet):
                 findFiles(highProcesses)
             except (TypeError, AttributeError):
                 pass
-            
-            
+
+
         c += 1
     except Exception as e:
         print(e)
@@ -383,7 +396,7 @@ if __name__== "__main__":
 
     #sniff(filter="host 132.248.181.220 and (port 443 or port 80)", prn=print_packet)
     sniff(filter=regla, prn=print_packet)
-    
+
     print("[*] Deteniendo IDS")
     print("[*] Escribiendo resultados en la bitacora")
     for x in range(0,len(IoClistDetected),3):
@@ -394,10 +407,8 @@ if __name__== "__main__":
 
         # Obtenemos una lista de los proceso ejecutados.
         # listOfRunningProcess = getListOfProcess()
-        # Listamos los 10 procesos con mayor uso de CPU 
+        # Listamos los 10 procesos con mayor uso de CPU
         # for i in listOfRunningProcess[:10]:
         #  print i
         # Buscamos un especifico PID y regresamos una lista con sus detalles.
         # processInfo = findPID(malwarePid)
-    
-
