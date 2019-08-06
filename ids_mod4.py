@@ -45,6 +45,8 @@ def keysHKLM():
     CloseKey(aReg)
     #print dic_HKLM.values()
     return dic_HKLM
+
+
 def keysHKCU():
     '''
         Funcion que lee las llaves contenidas en
@@ -66,6 +68,8 @@ def keysHKCU():
     CloseKey(aReg)
     #print dic_HKCU.values()
     return dic_HKCU
+
+
 def find_key(dic_HKLM,dic_HKCU):
     '''
         Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
@@ -92,6 +96,8 @@ def find_key(dic_HKLM,dic_HKCU):
         else:
             continue
     return match_HKLM,match_HKCU
+
+
 def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
     '''
         Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
@@ -119,6 +125,8 @@ def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
                 continue
         #print match_HKCU
         return match_HKLM,match_HKCU
+
+    
 def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
     '''
         Funcion que obtiene los indices de los diccionarios de las llaves del Registro de Windows,
@@ -148,6 +156,8 @@ def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
             key = "\HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run "+llave
             keys.append(key)
     IoClistDetected.append(keys)
+
+    
 def procAlert(processInfo):
     '''
         Funcion que verifica el porcentaje de CPU utilizado por algun PID, si este es mayor al 70 %
@@ -173,6 +183,8 @@ def procAlert(processInfo):
             highProcesses.append(proc)
             IoClistDetected.append(proc)
     return highProcesses
+
+
 def pidInfo(pids):
     '''
         Funcion que obtinen una lista de los detalles de un unico proceso en ejecucion.
@@ -192,6 +204,8 @@ def pidInfo(pids):
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return detailOfProcess
+
+
 def getListOfProcess():
     '''
         Funcion que obtinen una lista de los procesos ejecutados.
@@ -213,6 +227,8 @@ def getListOfProcess():
     listOfProcObjects = sorted(listOfProcObjects, key=lambda procObj: procObj['cpu_percent'], reverse=True)
 
     return listOfProcObjects
+
+
 def findPID(pid):
     '''
         Funcion que busca dentro de una lista de procesos un PID en particular y regresa el nombre del proceso.
@@ -226,6 +242,8 @@ def findPID(pid):
                     for i in elem.values():
                         processInfo.append(i)
     return processInfo
+
+
 def findFiles(highProcesses):
     global IoClistDetected
     for proc in highProcesses:
@@ -248,6 +266,7 @@ def findFiles(highProcesses):
                 exeFiles.append(match.group(2))
             IoClistDetected.append(file)
     return malwareFilesBat,exeFiles
+
 
 def bitacora(IoClistDetected):
     '''
@@ -280,6 +299,7 @@ def bitacora(IoClistDetected):
         bitacora.close()
     else:
         pass
+
 
 def messageBox():
     '''
@@ -314,6 +334,11 @@ def get_pid(dst, dstport):
 
 
 def crea_regla(domains,ports):
+    '''
+    Funcion que crea las reglas para el escaneo de red definidas en el archivo de reglas (IoCs)
+    Recibe: Los dominios o direcciones IP y puertos definidos en el archivo de configuracion
+    Devuelve: La regla para escanear la red
+    '''
     print '[*] Creando reglas de acuerdo al archivo de configuracion'
     ips =[]
     regla = ''
