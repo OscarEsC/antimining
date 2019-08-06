@@ -72,11 +72,12 @@ def keysHKCU():
 
 def find_key(dic_HKLM,dic_HKCU):
     '''
-        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
-        que contine los registros de las llaves:
+        Funcion que busca a traves de una expresion regular el tipo de comando para ejecutar el binario
+        de minado, el cual consiste del nombre del binario seguido de la opcion -a (Algoritmo a utilizar para el minado)
+        y el nombre del algoritmo. Estos parametros los busca dentro de los datos de las suiguientes llaves de registro:
             HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
             HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-        esta regresa una lista de cada HK si existe una concidencia.
+        esta regresa el indice en una lista de cada HK si existe una concidencia.
     '''
     match_HKLM = []
     match_HKCU = []
@@ -100,11 +101,9 @@ def find_key(dic_HKLM,dic_HKCU):
 
 def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
     '''
-        Funcion que busca la direccion del folder donde el malware se aloja, dentro de un diccionario
-        que contine los registros de las llaves:
-            HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-            HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-        esta regresa una lista de cada HK si existe una concidencia.
+        Funcion que busca el nombre del binario marcado como de alto consumo de CPU dentro de los diccionarios que contienen
+        la informacion de las llaves de registro en HKLM Y HKCU almacenadas con anterioridad, si se encuentra una coincidencia
+        se guarda el indice de la llave en el diccionario.
     '''
     match_HKLM = []
     match_HKCU = []
@@ -126,12 +125,12 @@ def find_key_with_exe(dic_HKLM,dic_HKCU,highProcesses):
         #print match_HKCU
         return match_HKLM,match_HKCU
 
-    
+
 def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
     '''
         Funcion que obtiene los indices de los diccionarios de las llaves del Registro de Windows,
-        con estos indices se realiza la funcion de ALERTA y se guarda cada llave como elelentos de
-        una llamada IoClistDetected la cual ya contiene los indocadores de compromiso.
+        con estos indices se realiza la funcion de ALERTA y se guarda cada llave como elementos de
+        una lista llamada IoClistDetected la cual ya contiene el Indocadores de Compromiso del consumo de CPU.
     '''
     global IoClistDetected
     keys = []
@@ -157,7 +156,7 @@ def keyAlert(match_HKLM,match_HKCU,dic_HKLM=None,dic_HKCU=None):
             keys.append(key)
     IoClistDetected.append(keys)
 
-    
+
 def procAlert(processInfo):
     '''
         Funcion que verifica el porcentaje de CPU utilizado por algun PID, si este es mayor al 70 %
@@ -245,6 +244,13 @@ def findPID(pid):
 
 
 def findFiles(highProcesses):
+    '''
+        Funcion que busca archivos .bat relacionados al programa de minado, la busqueda la realiza en la misma ruta
+        donde se almacenara el binario de minado, para ello se crea una lista de todos los archivos .bat, para posteriormente
+        abrirlos y por medio de una expresion regular buscar el nombre del binario de minado y posibles parametros,
+        como lo es el algoritmo a utilizar para minar.
+        Si se encontrara una coincidencia, este archivo .bat se toma como IoC y se agrega a la lista llamada IoClistDetected.
+    '''
     global IoClistDetected
     for proc in highProcesses:
         path = proc['exe'][:(len(proc['name'])*-1)]
